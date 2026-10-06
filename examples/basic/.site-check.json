@@ -1,0 +1,23 @@
+{
+  "site_dir": "site",
+  "base_url": "https://example.com",
+  "pages": ["index.html", "about.html"],
+  "nav": {
+    "expected_items": ["Home", "About"],
+    "required_on_all_pages": true,
+    "exempt_pages": []
+  },
+  "required_strings": {
+    "*": ["https://example.com/"],
+    "about.html": ["<h1>About</h1>"]
+  },
+  "forbidden_strings": {
+    "*": ["lorem ipsum", "staging.example.com"]
+  },
+  "og_required": ["og:title", "og:description", "og:image", "og:url"],
+  "external_check": {
+    "skip_domains": ["linkedin.com", "x.com", "twitter.com", "instagram.com", "facebook.com"],
+    "timeout": 10
+  },
+  "pdf_max_pages": {}
+}

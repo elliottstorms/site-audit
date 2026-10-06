@@ -1,0 +1,32 @@
+name: audit
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.x"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile
+        run: python -m py_compile site_audit.py
+      - name: Clean fixture passes
+        run: python site_audit.py --repo examples/basic --offline
+      - name: Broken fixture fails with exit code 2
+        run: |
+          set +e
+          python site_audit.py --repo examples/broken --offline
+          code=$?
+          set -e
+          echo "exit code: $code"
+          test "$code" -eq 2
