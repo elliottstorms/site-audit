@@ -20,6 +20,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Compile
         run: python -m py_compile site_audit.py
+      - name: Unit tests
+        run: python -m unittest discover -s test -v
       - name: Clean fixture passes
         run: python site_audit.py --repo examples/basic --offline
       - name: Broken fixture fails with exit code 2

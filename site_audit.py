@@ -182,7 +182,11 @@ def resolve_internal(target, site_dir):
     Paths that escape site_dir (e.g. ../netlify.toml) exist locally but are
     never deployed, so they must count as broken.
     """
-    path = target.split("#")[0].split("?")[0]
+    # Split off fragment/query (literal delimiters in the href) BEFORE decoding,
+    # then percent-decode: a browser requests "my file.html" for href="my%20file.html"
+    # and the server serves the decoded path, so the filesystem lookup must decode too.
+    # Without this, every percent-encoded link to a real file is a false "broken link".
+    path = urllib.parse.unquote(target.split("#")[0].split("?")[0])
     if path in ("", "/"):
         path = "index.html"
     path = path.lstrip("/")
@@ -211,7 +215,8 @@ def find_pages(site_dir):
 
 def pdf_page_count(path):
     try:
-        data = open(path, "rb").read()
+        with open(path, "rb") as f:
+            data = f.read()
         n = len(re.findall(rb"/Type\s*/Page[^s]", data))
         return n if n > 0 else None
     except Exception:
