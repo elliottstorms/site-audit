@@ -406,7 +406,8 @@ def run_audit(repo, cfg, live, wait, as_json, offline=False):
             fp = os.path.join(site_dir, page)
             if not os.path.isfile(fp):
                 continue
-            content = open(fp, encoding="utf-8", errors="replace").read()
+            with open(fp, encoding="utf-8", errors="replace") as f:
+                content = f.read()
             for n in needles:
                 if n not in content:
                     add(FAIL, "strings", "%s: required string absent: %r" % (page, n))
@@ -424,7 +425,8 @@ def run_audit(repo, cfg, live, wait, as_json, offline=False):
             fp = os.path.join(site_dir, page)
             if not os.path.isfile(fp):
                 continue
-            content = open(fp, encoding="utf-8", errors="replace").read().lower()
+            with open(fp, encoding="utf-8", errors="replace") as f:
+                content = f.read().lower()
             for n in needles:
                 if n.lower() in content:
                     add(FAIL, "strings", "%s: FORBIDDEN string present: %r" % (page, n))
@@ -432,7 +434,8 @@ def run_audit(repo, cfg, live, wait, as_json, offline=False):
     # ---- sitemap / robots ----
     sm = os.path.join(site_dir, "sitemap.xml")
     if os.path.isfile(sm):
-        sm_text = open(sm, encoding="utf-8", errors="replace").read()
+        with open(sm, encoding="utf-8", errors="replace") as f:
+            sm_text = f.read()
         locs = re.findall(r"<loc>\s*([^<]+?)\s*</loc>", sm_text)
         loc_paths = set()
         for loc in locs:
@@ -481,7 +484,8 @@ def run_audit(repo, cfg, live, wait, as_json, offline=False):
                         mismatched.append((p, "fetch failed: %s" % str(e)[:100]))
                         continue
                     compared += 1
-                    local = open(fp, "rb").read()
+                    with open(fp, "rb") as f:
+                        local = f.read()
                     if remote != local:
                         mismatched.append((p, "live bytes differ from local (%d vs %d bytes)" % (len(remote), len(local))))
                 if not mismatched or time.time() >= deadline:

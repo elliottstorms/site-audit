@@ -8,6 +8,7 @@ domain, a percent-encoded link, an escaping path) is caught in isolation.
 
 Run from the repo root:  python3 -m unittest discover -s test -v
 """
+import ast
 import importlib.util
 import os
 import tempfile
@@ -164,6 +165,36 @@ class TestPageParser(unittest.TestCase):
     def test_img_alt_none_vs_present(self):
         p = self._parse("<img src='a.png'><img src='b.png' alt='B'>")
         self.assertEqual(p.images, [("a.png", None), ("b.png", "B")])
+
+
+class TestNoLeakedFileHandles(unittest.TestCase):
+    """A file opened without a context manager leaks its handle until GC.
+
+    The tool is long-lived in some callers (a loop that audits many sites),
+    so `open(path).read()` on an exception-free path still holds the handle
+    open for an unbounded time. Every read in site_audit.py must go through a
+    `with` block. This AST invariant pins the whole class so a future edit
+    cannot reintroduce the pattern on an unexercised branch, which is exactly
+    how the string-scan and live-parity reads slipped past the fixture runs.
+    """
+
+    def test_no_bare_open_read(self):
+        with open(_SRC, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=_SRC)
+        offenders = []
+        for node in ast.walk(tree):
+            # Match `open(...).<attr>` where the call is the direct receiver of
+            # an attribute access (.read/.readlines/.write/...). A file opened
+            # inside a `with` binds to a name instead, so it never appears as
+            # the .value of such an Attribute and is correctly not flagged.
+            if (isinstance(node, ast.Attribute)
+                    and isinstance(node.value, ast.Call)
+                    and isinstance(node.value.func, ast.Name)
+                    and node.value.func.id == "open"):
+                offenders.append((node.lineno, node.attr))
+        self.assertEqual(
+            offenders, [],
+            "open(...) used without a context manager at: %r" % offenders)
 
 
 if __name__ == "__main__":
